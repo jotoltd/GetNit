@@ -1,6 +1,6 @@
 name: GetNit
 options:
-  bundleIdPrefix: com.getnit
+  bundleIdPrefix: com.jotoltd
   deploymentTarget:
     iOS: 17.0
 targets:
@@ -11,8 +11,20 @@ targets:
       - GetNit/Sources
     info:
       path: GetNit/Info.plist
+      properties:
+        CFBundleDisplayName: GetNit
+        NSPhotoLibraryUsageDescription: GetNit needs access to your photo library so you can swipe through and keep or delete photos.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.getnit.GetNit
+        PRODUCT_BUNDLE_IDENTIFIER: com.jotoltd.GetNit
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0
+        DEVELOPMENT_TEAM: A7QCQT8PG5
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
