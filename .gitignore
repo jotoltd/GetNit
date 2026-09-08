@@ -37,6 +37,11 @@ getnit-web/.env*.local
 # Vercel
 .vercel
 
+# Archives & exports
+*.xcarchive
+Export/
+ExportOptions.plist
+
 # Misc
 *.zip
 *.log
