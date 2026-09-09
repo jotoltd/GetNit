@@ -98,9 +98,35 @@ struct HomeView: View {
 
                             // Quick stats grid
                             HStack(spacing: 12) {
-                                QuickStatCard(icon: "photo.stack.fill", color: .blue, label: "Photos", value: "\(stats.totalPhotos)")
-                                QuickStatCard(icon: "camera.viewfinder", color: .purple, label: "Screenshots", value: "\(stats.totalScreenshots)")
-                                QuickStatCard(icon: "doc.on.doc.fill", color: .red, label: "Duplicates", value: "\(manager.duplicateGroups.count)")
+                                Button(action: {
+                                    manager.filters.screenshotsOnly = false
+                                    manager.filters.duplicatesOnly = false
+                                    manager.loadAssets()
+                                    hasStartedSwiping = true
+                                }) {
+                                    QuickStatCard(icon: "photo.stack.fill", color: .blue, label: "Photos", value: "\(stats.totalPhotos)")
+                                }
+                                .buttonStyle(.plain)
+
+                                Button(action: {
+                                    manager.filters.screenshotsOnly = true
+                                    manager.filters.duplicatesOnly = false
+                                    manager.loadAssets()
+                                    hasStartedSwiping = true
+                                }) {
+                                    QuickStatCard(icon: "camera.viewfinder", color: .purple, label: "Screenshots", value: "\(stats.totalScreenshots)")
+                                }
+                                .buttonStyle(.plain)
+
+                                Button(action: {
+                                    manager.filters.screenshotsOnly = false
+                                    manager.filters.duplicatesOnly = true
+                                    manager.loadAssets()
+                                    hasStartedSwiping = true
+                                }) {
+                                    QuickStatCard(icon: "doc.on.doc.fill", color: .red, label: "Duplicates", value: "\(manager.duplicateGroups.count)")
+                                }
+                                .buttonStyle(.plain)
                             }
 
                             // Marked for deletion (if any)
@@ -243,5 +269,6 @@ private struct QuickStatCard: View {
         .padding()
         .background(Color.white.opacity(0.1))
         .cornerRadius(12)
+        .contentShape(Rectangle())
     }
 }
