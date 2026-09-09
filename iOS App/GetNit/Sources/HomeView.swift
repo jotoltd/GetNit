@@ -7,6 +7,13 @@ struct HomeView: View {
     @State private var showFilters = false
     @State private var showStats = false
     @State private var showSettings = false
+    @State private var deviceStorage: DeviceStorage?
+
+    struct DeviceStorage {
+        let total: Int64
+        let available: Int64
+        let used: Int64
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,25 +38,58 @@ struct HomeView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
-                    // Stats summary cards
-                    if let stats = manager.libraryStats {
+                    if let stats = manager.libraryStats, let storage = deviceStorage {
+                        // Device storage breakdown
                         VStack(spacing: 16) {
-                            // Storage card (big)
                             VStack(spacing: 8) {
                                 HStack {
                                     Image(systemName: "internaldrive.fill")
                                         .font(.system(size: 28))
                                         .foregroundColor(.orange)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Library Storage")
+                                        Text("iPhone Storage")
                                             .font(.subheadline)
                                             .foregroundColor(.white.opacity(0.7))
-                                        Text(ByteCountFormatter.string(fromByteCount: stats.estimatedStorage, countStyle: .file))
+                                        Text(ByteCountFormatter.string(fromByteCount: storage.total, countStyle: .file))
                                             .font(.title)
                                             .fontWeight(.bold)
                                             .foregroundColor(.white)
                                     }
                                     Spacer()
+                                }
+
+                                // Storage bar
+                                VStack(spacing: 6) {
+                                    GeometryReader { geo in
+                                        ZStack(alignment: .leading) {
+                                            // Total bar
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(Color.white.opacity(0.15))
+                                                .frame(height: 12)
+
+                                            // Used bar
+                                            let usedFraction = CGFloat(storage.used) / CGFloat(storage.total)
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(Color.orange)
+                                                .frame(width: geo.size.width * usedFraction, height: 12)
+
+                                            // Photos portion overlay
+                                            if stats.estimatedStorage > 0 {
+                                                let photoFraction = CGFloat(stats.estimatedStorage) / CGFloat(storage.total)
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.blue)
+                                                    .frame(width: geo.size.width * photoFraction, height: 12)
+                                            }
+                                        }
+                                    }
+                                    .frame(height: 12)
+
+                                    HStack(spacing: 16) {
+                                        LegendDot(color: .blue, label: "Photos", value: ByteCountFormatter.string(fromByteCount: stats.estimatedStorage, countStyle: .file))
+                                        LegendDot(color: .orange, label: "Other", value: ByteCountFormatter.string(fromByteCount: max(0, storage.used - stats.estimatedStorage), countStyle: .file))
+                                        LegendDot(color: .gray, label: "Free", value: ByteCountFormatter.string(fromByteCount: storage.available, countStyle: .file))
+                                    }
+                                    .font(.caption)
                                 }
                             }
                             .padding()
@@ -135,6 +175,7 @@ struct HomeView: View {
             }
         }
         .background(Color.black.ignoresSafeArea())
+        .onAppear { loadDeviceStorage() }
         .sheet(isPresented: $showFilters) {
             FilterView(manager: manager)
         }
@@ -143,6 +184,38 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(manager: manager)
+        }
+    }
+
+    private func loadDeviceStorage() {
+        let url = URL(fileURLWithPath: NSHomeDirectory())
+        do {
+            let values = try url.resourceValues(forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityKey])
+            let total = Int64(values.volumeTotalCapacity ?? 0)
+            let available = Int64(values.volumeAvailableCapacity ?? 0)
+            deviceStorage = DeviceStorage(
+                total: total,
+                available: available,
+                used: total - available
+            )
+        } catch {
+            deviceStorage = DeviceStorage(total: 0, available: 0, used: 0)
+        }
+    }
+}
+
+private struct LegendDot: View {
+    let color: Color
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text("\(label): \(value)")
+                .foregroundColor(.white.opacity(0.6))
         }
     }
 }
