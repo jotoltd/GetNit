@@ -297,7 +297,36 @@ final class PhotoLibraryManager: ObservableObject {
             currentImage = nil
             nextImage = nil
         } else {
-            loadCurrentImage()
+            // Immediately swap to preloaded next image to avoid flashing old photo
+            if let next = nextImage {
+                currentImage = next
+                nextImage = nil
+                // Preload the next-next image
+                preloadNextImage()
+            } else {
+                loadCurrentImage()
+            }
+        }
+    }
+
+    private func preloadNextImage() {
+        if let id = nextRequestID { imageManager.cancelImageRequest(id) }
+        nextImage = nil
+
+        guard currentIndex + 1 < assets.count else { return }
+
+        let nextAsset = assets[currentIndex + 1]
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+
+        nextRequestID = imageManager.requestImage(
+            for: nextAsset,
+            targetSize: targetSize,
+            contentMode: .aspectFit,
+            options: options
+        ) { [weak self] image, _ in
+            DispatchQueue.main.async { self?.nextImage = image }
         }
     }
 

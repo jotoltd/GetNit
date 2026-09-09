@@ -157,6 +157,8 @@ struct ContentView: View {
                         onDelete: { manager.markCurrentForDeletion() },
                         onLongPress: { showMetadata = true }
                     )
+                    .id(manager.currentIndex)
+                    .transition(.opacity)
                     .padding()
                 }
             }

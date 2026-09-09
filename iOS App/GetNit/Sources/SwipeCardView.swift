@@ -99,7 +99,6 @@ struct SwipeCardView: View {
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             onKeep()
-                            offset = .zero
                         }
                     } else if offset.width < -threshold {
                         if hapticsEnabled {
@@ -110,7 +109,6 @@ struct SwipeCardView: View {
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             onDelete()
-                            offset = .zero
                         }
                     } else {
                         withAnimation {
