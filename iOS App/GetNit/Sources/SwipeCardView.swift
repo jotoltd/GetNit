@@ -6,9 +6,11 @@ struct SwipeCardView: View {
     let photoDate: Date?
     let onKeep: () -> Void
     let onDelete: () -> Void
+    let onLongPress: () -> Void
 
     @State private var offset: CGSize = .zero
     @State private var hasTriggeredHaptic = false
+    @AppStorage("hapticsEnabled") private var hapticsEnabled = true
 
     private let threshold: CGFloat = 120
 
@@ -79,7 +81,9 @@ struct SwipeCardView: View {
                     // Trigger haptic when crossing threshold
                     let crossed = abs(offset.width) > threshold
                     if crossed && !hasTriggeredHaptic {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if hapticsEnabled {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
                         hasTriggeredHaptic = true
                     } else if !crossed {
                         hasTriggeredHaptic = false
@@ -87,7 +91,9 @@ struct SwipeCardView: View {
                 }
                 .onEnded { _ in
                     if offset.width > threshold {
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        if hapticsEnabled {
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        }
                         withAnimation(.easeOut(duration: 0.3)) {
                             offset = CGSize(width: 500, height: 0)
                         }
@@ -96,7 +102,9 @@ struct SwipeCardView: View {
                             offset = .zero
                         }
                     } else if offset.width < -threshold {
-                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                        if hapticsEnabled {
+                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                        }
                         withAnimation(.easeOut(duration: 0.3)) {
                             offset = CGSize(width: -500, height: 0)
                         }
@@ -112,6 +120,9 @@ struct SwipeCardView: View {
                     hasTriggeredHaptic = false
                 }
         )
+        .onLongPressGesture(minimumDuration: 0.5) {
+            onLongPress()
+        }
     }
 
     private var borderColor: Color {

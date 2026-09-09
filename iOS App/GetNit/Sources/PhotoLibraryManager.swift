@@ -7,6 +7,14 @@ struct FilterOptions: Equatable {
     var startDate: Date?
     var endDate: Date?
     var duplicatesOnly: Bool = false
+    var sortOption: SortOption = .newestFirst
+}
+
+enum SortOption: String, CaseIterable {
+    case newestFirst = "Newest First"
+    case oldestFirst = "Oldest First"
+    case largestFirst = "Largest First"
+    case smallestFirst = "Smallest First"
 }
 
 enum SwipeAction: Equatable {
@@ -136,7 +144,16 @@ final class PhotoLibraryManager: ObservableObject {
 
     func loadAssets() {
         let options = PHFetchOptions()
-        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        switch filters.sortOption {
+        case .newestFirst:
+            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        case .oldestFirst:
+            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
+        case .largestFirst:
+            options.sortDescriptors = [NSSortDescriptor(key: "pixelWidth", ascending: false)]
+        case .smallestFirst:
+            options.sortDescriptors = [NSSortDescriptor(key: "pixelWidth", ascending: true)]
+        }
 
         var predicates: [NSPredicate] = []
         if filters.screenshotsOnly {

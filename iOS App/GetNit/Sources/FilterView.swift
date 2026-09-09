@@ -7,6 +7,7 @@ struct FilterView: View {
 
     @State private var screenshotsOnly: Bool
     @State private var duplicatesOnly: Bool
+    @State private var sortOption: SortOption
     @State private var selectedAlbumIndex: Int
     @State private var startDate: Date
     @State private var endDate: Date
@@ -18,6 +19,7 @@ struct FilterView: View {
         self.manager = manager
         _screenshotsOnly = State(initialValue: manager.filters.screenshotsOnly)
         _duplicatesOnly = State(initialValue: manager.filters.duplicatesOnly)
+        _sortOption = State(initialValue: manager.filters.sortOption)
         _selectedAlbumIndex = State(initialValue: manager.filters.album == nil ? 0 : (manager.albums.firstIndex(of: manager.filters.album!) ?? 0) + 1)
         _startDate = State(initialValue: manager.filters.startDate ?? Date().addingTimeInterval(-30 * 24 * 3600))
         _endDate = State(initialValue: manager.filters.endDate ?? Date())
@@ -41,6 +43,14 @@ struct FilterView: View {
                 Section("Type") {
                     Toggle("Screenshots Only", isOn: $screenshotsOnly)
                     Toggle("Duplicates Only", isOn: $duplicatesOnly)
+                }
+
+                Section("Sort") {
+                    Picker("Order", selection: $sortOption) {
+                        ForEach(SortOption.allCases, id: \.self) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
                 }
 
                 Section("Date Range") {
@@ -80,6 +90,7 @@ struct FilterView: View {
         manager.setRememberReviewed(rememberReviewed)
         manager.filters.screenshotsOnly = screenshotsOnly
         manager.filters.duplicatesOnly = duplicatesOnly
+        manager.filters.sortOption = sortOption
         manager.filters.album = selectedAlbumIndex == 0 ? nil : manager.albums[selectedAlbumIndex - 1]
         manager.filters.startDate = useStartDate ? startDate : nil
         manager.filters.endDate = useEndDate ? endDate : nil

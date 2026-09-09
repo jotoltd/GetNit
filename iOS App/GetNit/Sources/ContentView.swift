@@ -4,7 +4,10 @@ import Photos
 struct ContentView: View {
     @StateObject private var manager = PhotoLibraryManager()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @State private var showFilters = false
+    @State private var showSettings = false
+    @State private var showMetadata = false
 
     var body: some View {
         ZStack {
@@ -35,6 +38,24 @@ struct ContentView: View {
         .sheet(isPresented: $showFilters) {
             FilterView(manager: manager)
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(manager: manager)
+        }
+        .sheet(isPresented: $showMetadata) {
+            if manager.hasPhotos {
+                PhotoMetadataView(asset: manager.assets[manager.currentIndex])
+            }
+        }
+    }
+
+    private func haptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+        guard hapticsEnabled else { return }
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+
+    private func hapticNotification(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        guard hapticsEnabled else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(type)
     }
 
     // MARK: - Welcome
@@ -102,6 +123,13 @@ struct ContentView: View {
                         .font(.system(size: 22))
                         .foregroundColor(.white)
                 }
+
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "gearshape.circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                }
+                .padding(.leading, 8)
             }
             .padding(.horizontal)
             .padding(.top, 8)
@@ -126,7 +154,8 @@ struct ContentView: View {
                         image: image,
                         photoDate: manager.assets[manager.currentIndex].creationDate,
                         onKeep: { manager.keepCurrent() },
-                        onDelete: { manager.markCurrentForDeletion() }
+                        onDelete: { manager.markCurrentForDeletion() },
+                        onLongPress: { showMetadata = true }
                     )
                     .padding()
                 }
@@ -135,7 +164,7 @@ struct ContentView: View {
             // Undo button
             if manager.canUndo {
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    haptic(.light)
                     manager.undoLastSwipe()
                 }) {
                     HStack(spacing: 6) {
@@ -157,7 +186,7 @@ struct ContentView: View {
             // Action buttons
             HStack(spacing: 40) {
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    haptic(.medium)
                     manager.markCurrentForDeletion()
                 }) {
                     Image(systemName: "xmark.circle.fill")
@@ -166,7 +195,7 @@ struct ContentView: View {
                 }
 
                 Button(action: {
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    hapticNotification(.success)
                     manager.keepCurrent()
                 }) {
                     Image(systemName: "checkmark.circle.fill")
@@ -182,7 +211,9 @@ struct ContentView: View {
 
     private var summaryView: some View {
         VStack(spacing: 20) {
-            if manager.assets.isEmpty {
+            if manager.assets.isEmpty && manager.markedForDeletion.isEmpty {
+                emptyStateView
+            } else if manager.assets.isEmpty {
                 allCaughtUpView
             } else if manager.markedForDeletion.isEmpty {
                 allKeptView
@@ -191,6 +222,40 @@ struct ContentView: View {
             }
         }
         .padding()
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 60))
+                .foregroundColor(.white.opacity(0.5))
+
+            Text("No photos found")
+                .font(.title)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+
+            Text("No photos match your current filters. Try adjusting them to see more photos.")
+                .foregroundColor(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+
+            Button(action: { showFilters = true }) {
+                Text("Change Filters")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white.opacity(0.2))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+
+            Button(action: { manager.clearReviewHistory() }) {
+                Text("Reset Review History")
+                    .font(.subheadline)
+                    .foregroundColor(.red)
+            }
+        }
     }
 
     private var allCaughtUpView: some View {
@@ -294,7 +359,7 @@ struct ContentView: View {
             } else {
                 VStack(spacing: 12) {
                     Button(action: {
-                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                        hapticNotification(.warning)
                         manager.performBatchDelete { _ in }
                     }) {
                         Text("Delete \(manager.markedForDeletion.count) Photo\(manager.markedForDeletion.count == 1 ? "" : "s")")
