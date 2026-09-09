@@ -67,6 +67,14 @@ struct StatsView: View {
                             value: "\(stats.totalPhotos)"
                         )
 
+                        // Videos
+                        StatCard(
+                            icon: "video.fill",
+                            color: .green,
+                            title: "Total Videos",
+                            value: "\(stats.totalVideos)"
+                        )
+
                         // Screenshots
                         StatCard(
                             icon: "camera.viewfinder",

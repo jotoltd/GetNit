@@ -4,6 +4,7 @@ import Photos
 struct FilterOptions: Equatable {
     var album: PHAssetCollection?
     var screenshotsOnly: Bool = false
+    var videosOnly: Bool = false
     var startDate: Date?
     var endDate: Date?
     var duplicatesOnly: Bool = false
@@ -19,6 +20,7 @@ enum SortOption: String, CaseIterable {
 
 struct LibraryStats {
     let totalPhotos: Int
+    let totalVideos: Int
     let totalScreenshots: Int
     let totalDuplicates: Int
     let estimatedStorage: Int64
@@ -54,6 +56,7 @@ final class PhotoLibraryManager: ObservableObject {
     @Published var duplicateGroups: [[PHAsset]] = []
     @Published var upcomingImages: [Int: UIImage] = [:]
     @Published var libraryStats: LibraryStats?
+    @Published var currentAssetIsVideo: Bool = false
 
     private let reviewedKey = "com.getnit.reviewedAssets"
     private let rememberKey = "com.getnit.rememberReviewed"
@@ -95,33 +98,37 @@ final class PhotoLibraryManager: ObservableObject {
     // MARK: - Library Stats
 
     func calculateLibraryStats() {
-        let options = PHFetchOptions()
-        let allAssets = PHAsset.fetchAssets(with: .image, options: options)
+        DispatchQueue.global(qos: .utility).async {
+            let options = PHFetchOptions()
+            let allAssets = PHAsset.fetchAssets(with: .image, options: options)
 
-        var total = 0
-        var screenshots = 0
-        var storageSize: Int64 = 0
+            var total = 0
+            var screenshots = 0
+            var videos = 0
 
-        allAssets.enumerateObjects { asset, _, _ in
-            total += 1
-            if asset.mediaSubtypes.contains(.photoScreenshot) {
-                screenshots += 1
-            }
-            let resources = PHAssetResource.assetResources(for: asset)
-            for resource in resources {
-                if let size = resource.value(forKey: "fileSize") as? Int64 {
-                    storageSize += size
+            allAssets.enumerateObjects { asset, _, _ in
+                total += 1
+                if asset.mediaSubtypes.contains(.photoScreenshot) {
+                    screenshots += 1
+                }
+                if asset.mediaType == .video {
+                    videos += 1
                 }
             }
-        }
 
-        DispatchQueue.main.async {
-            self.libraryStats = LibraryStats(
-                totalPhotos: total,
-                totalScreenshots: screenshots,
-                totalDuplicates: self.duplicateGroups.reduce(0) { $0 + $1.count },
-                estimatedStorage: storageSize
-            )
+            // Estimate storage from average photo size
+            // Avoids expensive PHAssetResource call per photo
+            let estimatedSize = Int64(total) * 2_500_000 // ~2.5MB avg
+
+            DispatchQueue.main.async {
+                self.libraryStats = LibraryStats(
+                    totalPhotos: total - videos,
+                    totalVideos: videos,
+                    totalScreenshots: screenshots,
+                    totalDuplicates: self.duplicateGroups.reduce(0) { $0 + $1.count },
+                    estimatedStorage: estimatedSize
+                )
+            }
         }
     }
 
@@ -212,14 +219,26 @@ final class PhotoLibraryManager: ObservableObject {
             options.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
 
+        // Determine media type: videos only, or all (images + videos)
+        let mediaType: PHAssetMediaType? = filters.videosOnly ? .video : nil
+
         var fetched: [PHAsset] = []
         if let album = filters.album {
             PHAsset.fetchAssets(in: album, options: options).enumerateObjects { asset, _, _ in
+                if mediaType == nil || asset.mediaType == mediaType {
+                    fetched.append(asset)
+                }
+            }
+        } else if let mt = mediaType {
+            PHAsset.fetchAssets(with: mt, options: options).enumerateObjects { asset, _, _ in
                 fetched.append(asset)
             }
         } else {
-            PHAsset.fetchAssets(with: .image, options: options).enumerateObjects { asset, _, _ in
-                fetched.append(asset)
+            // Fetch both images and videos
+            PHAsset.fetchAssets(with: options).enumerateObjects { asset, _, _ in
+                if asset.mediaType == .image || asset.mediaType == .video {
+                    fetched.append(asset)
+                }
             }
         }
 
@@ -230,16 +249,30 @@ final class PhotoLibraryManager: ObservableObject {
             assets = fetched
         }
 
-        // Detect duplicates from the full fetched set
-        duplicateGroups = detectDuplicates(in: fetched)
+        // Detect duplicates from the full fetched set (background)
+        let fetchedCopy = fetched
+        DispatchQueue.global(qos: .utility).async {
+            let groups = self.detectDuplicates(in: fetchedCopy)
+            DispatchQueue.main.async {
+                self.duplicateGroups = groups
 
-        // Calculate library stats
+                // If duplicatesOnly filter is on, re-filter now that we have groups
+                if self.filters.duplicatesOnly {
+                    let duplicateAssets = Set(groups.flatMap { $0 })
+                    self.assets = self.assets.filter { duplicateAssets.contains($0) }
+                    self.currentIndex = 0
+                    self.isComplete = self.assets.isEmpty
+                    self.loadCurrentImage()
+                }
+            }
+        }
+
+        // Calculate library stats (background)
         calculateLibraryStats()
 
-        // Filter to show only duplicates if requested
+        // Filter to show only duplicates if requested (will be re-filtered when groups load)
         if filters.duplicatesOnly {
-            let duplicateAssets = Set(duplicateGroups.flatMap { $0 })
-            assets = assets.filter { duplicateAssets.contains($0) }
+            // Skip duplicate filtering here - will be done when groups arrive
         }
 
         currentIndex = 0
@@ -263,6 +296,7 @@ final class PhotoLibraryManager: ObservableObject {
         }
 
         let asset = assets[currentIndex]
+        currentAssetIsVideo = asset.mediaType == .video
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true

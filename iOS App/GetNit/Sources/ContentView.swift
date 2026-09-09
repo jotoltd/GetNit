@@ -190,9 +190,12 @@ struct ContentView: View {
 
                 // Interactive top card
                 if let image = manager.currentImage, manager.hasPhotos {
+                    let asset = manager.assets[manager.currentIndex]
                     SwipeCardView(
                         image: image,
-                        photoDate: manager.assets[manager.currentIndex].creationDate,
+                        photoDate: asset.creationDate,
+                        isVideo: asset.mediaType == .video,
+                        videoDuration: asset.duration,
                         onKeep: { manager.keepCurrent() },
                         onDelete: { manager.markCurrentForDeletion() },
                         onLongPress: { showMetadata = true }

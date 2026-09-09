@@ -6,6 +6,7 @@ struct FilterView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var screenshotsOnly: Bool
+    @State private var videosOnly: Bool
     @State private var duplicatesOnly: Bool
     @State private var sortOption: SortOption
     @State private var selectedAlbumIndex: Int
@@ -18,6 +19,7 @@ struct FilterView: View {
     init(manager: PhotoLibraryManager) {
         self.manager = manager
         _screenshotsOnly = State(initialValue: manager.filters.screenshotsOnly)
+        _videosOnly = State(initialValue: manager.filters.videosOnly)
         _duplicatesOnly = State(initialValue: manager.filters.duplicatesOnly)
         _sortOption = State(initialValue: manager.filters.sortOption)
         _selectedAlbumIndex = State(initialValue: manager.filters.album == nil ? 0 : (manager.albums.firstIndex(of: manager.filters.album!) ?? 0) + 1)
@@ -42,6 +44,7 @@ struct FilterView: View {
 
                 Section("Type") {
                     Toggle("Screenshots Only", isOn: $screenshotsOnly)
+                    Toggle("Videos Only", isOn: $videosOnly)
                     Toggle("Duplicates Only", isOn: $duplicatesOnly)
                 }
 
@@ -89,6 +92,7 @@ struct FilterView: View {
     private func applyFilters() {
         manager.setRememberReviewed(rememberReviewed)
         manager.filters.screenshotsOnly = screenshotsOnly
+        manager.filters.videosOnly = videosOnly
         manager.filters.duplicatesOnly = duplicatesOnly
         manager.filters.sortOption = sortOption
         manager.filters.album = selectedAlbumIndex == 0 ? nil : manager.albums[selectedAlbumIndex - 1]

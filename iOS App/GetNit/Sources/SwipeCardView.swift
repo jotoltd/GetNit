@@ -4,6 +4,8 @@ import Photos
 struct SwipeCardView: View {
     let image: UIImage
     let photoDate: Date?
+    let isVideo: Bool
+    let videoDuration: TimeInterval?
     let onKeep: () -> Void
     let onDelete: () -> Void
     let onLongPress: () -> Void
@@ -71,6 +73,29 @@ struct SwipeCardView: View {
                     }
                 }
             }
+
+            // Video badge
+            if isVideo {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                        if let duration = videoDuration {
+                            Text(formatDuration(duration))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(8)
+                    .padding(.bottom, 12)
+                }
+            }
         }
         .offset(x: offset.width, y: offset.height)
         .rotationEffect(.degrees(Double(offset.width / 20)))
@@ -131,5 +156,11 @@ struct SwipeCardView: View {
         } else {
             return .clear
         }
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%d:%02d", mins, secs)
     }
 }
