@@ -22,7 +22,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.jotoltd.getnit
+        PRODUCT_BUNDLE_IDENTIFIER: com.digitalgaff.getnit
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0
         DEVELOPMENT_TEAM: 3B9B42HAF9
