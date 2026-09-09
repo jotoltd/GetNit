@@ -1,5 +1,6 @@
 import SwiftUI
 import Photos
+import StoreKit
 
 struct HomeView: View {
     @ObservedObject var manager: PhotoLibraryManager
@@ -8,6 +9,8 @@ struct HomeView: View {
     @State private var showStats = false
     @State private var showSettings = false
     @State private var deviceStorage: DeviceStorage?
+    @State private var requestReview = false
+    @Environment(\.requestReview) private var requestReviewAction
 
     struct DeviceStorage {
         let total: Int64
@@ -17,19 +20,40 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("GetNit")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+            // Header with logo centered
+            ZStack {
+                // Settings on left
+                HStack {
+                    Button(action: { showSettings = true }) {
+                        Image(systemName: "gearshape.circle")
+                            .font(.system(size: 26))
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                }
 
-                Spacer()
-
-                Button(action: { showSettings = true }) {
-                    Image(systemName: "gearshape.circle")
-                        .font(.system(size: 26))
+                // Logo centered
+                HStack(spacing: 10) {
+                    Image("AppLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 36, height: 36)
+                    Text("GetNit")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
+                }
+
+                // Heart/rate button on right
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        requestReview = true
+                    }) {
+                        Image(systemName: "heart.circle")
+                            .font(.system(size: 26))
+                            .foregroundColor(.pink)
+                    }
                 }
             }
             .padding(.horizontal, 24)
@@ -40,7 +64,7 @@ struct HomeView: View {
             if let stats = manager.libraryStats, let storage = deviceStorage {
                 VStack(spacing: 16) {
                     // Storage card
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         HStack {
                             Image(systemName: "internaldrive.fill")
                                 .font(.system(size: 28))
@@ -58,42 +82,72 @@ struct HomeView: View {
                         }
 
                         // Storage bar
-                        VStack(spacing: 6) {
+                        VStack(spacing: 8) {
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: 8)
                                         .fill(Color.white.opacity(0.15))
-                                        .frame(height: 12)
+                                        .frame(height: 20)
 
                                     let usedFraction = CGFloat(storage.used) / CGFloat(max(storage.total, 1))
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: 8)
                                         .fill(Color.orange)
-                                        .frame(width: geo.size.width * usedFraction, height: 12)
+                                        .frame(width: geo.size.width * usedFraction, height: 20)
 
                                     if stats.estimatedStorage > 0 {
                                         let photoFraction = CGFloat(stats.estimatedStorage) / CGFloat(max(storage.total, 1))
-                                        RoundedRectangle(cornerRadius: 6)
+                                        RoundedRectangle(cornerRadius: 8)
                                             .fill(Color.blue)
-                                            .frame(width: geo.size.width * photoFraction, height: 12)
+                                            .frame(width: geo.size.width * photoFraction, height: 20)
                                     }
                                 }
                             }
-                            .frame(height: 12)
+                            .frame(height: 20)
 
-                            HStack(spacing: 12) {
-                                LegendDot(color: .blue, label: "Photos", value: ByteCountFormatter.string(fromByteCount: stats.estimatedStorage, countStyle: .file))
-                                LegendDot(color: .orange, label: "Other", value: ByteCountFormatter.string(fromByteCount: max(0, storage.used - stats.estimatedStorage), countStyle: .file))
-                                LegendDot(color: .gray, label: "Free", value: ByteCountFormatter.string(fromByteCount: storage.available, countStyle: .file))
+                            // Used vs Free big numbers
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("USED")
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Text(ByteCountFormatter.string(fromByteCount: storage.used, countStyle: .file))
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.orange)
+                                }
+
+                                Spacer()
+
+                                VStack(alignment: .center, spacing: 2) {
+                                    Text("PHOTOS")
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Text(ByteCountFormatter.string(fromByteCount: stats.estimatedStorage, countStyle: .file))
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.blue)
+                                }
+
+                                Spacer()
+
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("FREE")
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Text(ByteCountFormatter.string(fromByteCount: storage.available, countStyle: .file))
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.green)
+                                }
                             }
-                            .font(.caption)
                         }
                     }
                     .padding()
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(16)
 
-                    // Quick stats grid
-                    HStack(spacing: 10) {
+                    // Quick stats grid - 2 per row
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                         QuickStatCard(icon: "photo.stack.fill", color: .blue, label: "Photos", value: "\(stats.totalPhotos)")
                             .onTapGesture {
                                 manager.filters.screenshotsOnly = false
@@ -202,6 +256,12 @@ struct HomeView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear { loadDeviceStorage() }
+        .onChange(of: requestReview) { _, newValue in
+            if newValue {
+                requestReviewAction()
+                requestReview = false
+            }
+        }
         .sheet(isPresented: $showFilters) {
             FilterView(manager: manager)
         }

@@ -100,13 +100,15 @@ final class PhotoLibraryManager: ObservableObject {
     func calculateLibraryStats() {
         DispatchQueue.global(qos: .utility).async {
             let options = PHFetchOptions()
-            let allAssets = PHAsset.fetchAssets(with: .image, options: options)
+            // Fetch ALL assets (images + videos), not just .image
+            let allAssets = PHAsset.fetchAssets(with: options)
 
             var total = 0
             var screenshots = 0
             var videos = 0
 
             allAssets.enumerateObjects { asset, _, _ in
+                guard asset.mediaType == .image || asset.mediaType == .video else { return }
                 total += 1
                 if asset.mediaSubtypes.contains(.photoScreenshot) {
                     screenshots += 1
