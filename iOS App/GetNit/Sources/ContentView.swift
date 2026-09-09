@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var manager = PhotoLibraryManager()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @State private var hasStartedSwiping = false
     @State private var showFilters = false
     @State private var showSettings = false
     @State private var showMetadata = false
@@ -19,10 +20,12 @@ struct ContentView: View {
             } else if manager.authorizationStatus == .notDetermined {
                 welcomeView
             } else if manager.authorizationStatus == .authorized || manager.authorizationStatus == .limited {
-                if manager.isComplete {
+                if hasStartedSwiping && !manager.isComplete {
+                    photoStack
+                } else if hasStartedSwiping && manager.isComplete {
                     summaryView
                 } else {
-                    photoStack
+                    HomeView(manager: manager, hasStartedSwiping: $hasStartedSwiping)
                 }
             } else {
                 deniedView
@@ -35,6 +38,9 @@ struct ContentView: View {
         }
         .onChange(of: hasSeenOnboarding) { _, seen in
             if seen { manager.checkAuthorization() }
+        }
+        .onChange(of: manager.isComplete) { _, complete in
+            if complete { hasStartedSwiping = false }
         }
         .sheet(isPresented: $showFilters) {
             FilterView(manager: manager)
@@ -110,6 +116,14 @@ struct ContentView: View {
 
             // Top bar: counters + filter + undo
             HStack {
+                Button(action: {
+                    hasStartedSwiping = false
+                }) {
+                    Image(systemName: "house.circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                }
+
                 Text("\(manager.currentIndex + 1) / \(manager.assets.count)")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.7))
@@ -314,6 +328,17 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
+            Button(action: { hasStartedSwiping = false }) {
+                Text("Home")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .foregroundColor(.black)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+
             Button(action: { manager.clearReviewHistory() }) {
                 Text("Reset Review History")
                     .font(.subheadline)
@@ -338,6 +363,17 @@ struct ContentView: View {
 
             Button(action: { manager.restart() }) {
                 Text("Start Over")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white.opacity(0.2))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+
+            Button(action: { hasStartedSwiping = false }) {
+                Text("Home")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
