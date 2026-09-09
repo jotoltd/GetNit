@@ -196,6 +196,7 @@ struct ContentView: View {
                         photoDate: asset.creationDate,
                         isVideo: asset.mediaType == .video,
                         videoDuration: asset.duration,
+                        videoAsset: asset,
                         onKeep: { manager.keepCurrent() },
                         onDelete: { manager.markCurrentForDeletion() },
                         onLongPress: { showMetadata = true }

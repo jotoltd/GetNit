@@ -1,17 +1,22 @@
 import SwiftUI
 import Photos
+import PhotosUI
+import AVKit
 
 struct SwipeCardView: View {
     let image: UIImage
     let photoDate: Date?
     let isVideo: Bool
     let videoDuration: TimeInterval?
+    let videoAsset: PHAsset?
     let onKeep: () -> Void
     let onDelete: () -> Void
     let onLongPress: () -> Void
 
     @State private var offset: CGSize = .zero
     @State private var hasTriggeredHaptic = false
+    @State private var showVideoPlayer = false
+    @State private var videoURL: URL?
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
 
     private let threshold: CGFloat = 120
@@ -74,26 +79,30 @@ struct SwipeCardView: View {
                 }
             }
 
-            // Video badge
+            // Video badge - tap to play
             if isVideo {
                 VStack {
                     Spacer()
-                    HStack {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.white)
-                        if let duration = videoDuration {
-                            Text(formatDuration(duration))
-                                .font(.caption)
-                                .fontWeight(.medium)
+                    Button(action: {
+                        loadAndPlayVideo()
+                    }) {
+                        HStack {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 30))
                                 .foregroundColor(.white)
+                            if let duration = videoDuration {
+                                Text(formatDuration(duration))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                            }
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(8)
+                        .padding(.bottom, 12)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(8)
-                    .padding(.bottom, 12)
                 }
             }
         }
@@ -146,6 +155,27 @@ struct SwipeCardView: View {
         .onLongPressGesture(minimumDuration: 0.5) {
             onLongPress()
         }
+        .fullScreenCover(isPresented: $showVideoPlayer) {
+            if let url = videoURL {
+                VideoPlayerView(url: url)
+            }
+        }
+    }
+
+    private func loadAndPlayVideo() {
+        guard let asset = videoAsset else { return }
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
+
+        PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+            if let urlAsset = avAsset as? AVURLAsset {
+                DispatchQueue.main.async {
+                    self.videoURL = urlAsset.url
+                    self.showVideoPlayer = true
+                }
+            }
+        }
     }
 
     private var borderColor: Color {
@@ -163,4 +193,18 @@ struct SwipeCardView: View {
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", mins, secs)
     }
+}
+
+struct VideoPlayerView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = AVPlayer(url: url)
+        controller.player?.play()
+        controller.allowsPictureInPicturePlayback = true
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
 }
