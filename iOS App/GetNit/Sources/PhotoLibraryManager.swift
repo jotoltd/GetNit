@@ -6,6 +6,7 @@ struct FilterOptions: Equatable {
     var screenshotsOnly: Bool = false
     var startDate: Date?
     var endDate: Date?
+    var duplicatesOnly: Bool = false
 }
 
 enum SwipeAction: Equatable {
@@ -33,6 +34,9 @@ final class PhotoLibraryManager: ObservableObject {
     @Published var albums: [PHAssetCollection] = []
     @Published var history: [SwipeHistoryEntry] = []
     @Published var rememberReviewed: Bool = true
+    @Published var lastDeletedSize: Int64 = 0
+    @Published var showStorageFreed: Bool = false
+    @Published var duplicateGroups: [[PHAsset]] = []
 
     private let reviewedKey = "com.getnit.reviewedAssets"
     private let rememberKey = "com.getnit.rememberReviewed"
@@ -44,6 +48,7 @@ final class PhotoLibraryManager: ObservableObject {
     var hasPhotos: Bool { !assets.isEmpty && currentIndex < assets.count }
     var remainingCount: Int { assets.count - currentIndex }
     var canUndo: Bool { !history.isEmpty }
+    var duplicateCount: Int { duplicateGroups.reduce(0) { $0 + $1.count } }
 
     init() {
         rememberReviewed = UserDefaults.standard.object(forKey: rememberKey) as? Bool ?? true
@@ -102,6 +107,31 @@ final class PhotoLibraryManager: ObservableObject {
         albums = found
     }
 
+    // MARK: - Duplicate Detection
+
+    func detectDuplicates(in assets: [PHAsset]) -> [[PHAsset]] {
+        // Group by similar creation date (within 5 seconds) and same pixel size
+        let sorted = assets.sorted { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }
+        var groups: [[PHAsset]] = []
+        var currentGroup: [PHAsset] = []
+
+        for asset in sorted {
+            if let last = currentGroup.last,
+               let lastDate = last.creationDate,
+               let assetDate = asset.creationDate,
+               abs(lastDate.timeIntervalSince(assetDate)) < 5,
+               last.pixelWidth == asset.pixelWidth,
+               last.pixelHeight == asset.pixelHeight {
+                currentGroup.append(asset)
+            } else {
+                if currentGroup.count > 1 { groups.append(currentGroup) }
+                currentGroup = [asset]
+            }
+        }
+        if currentGroup.count > 1 { groups.append(currentGroup) }
+        return groups
+    }
+
     // MARK: - Loading Assets
 
     func loadAssets() {
@@ -138,6 +168,15 @@ final class PhotoLibraryManager: ObservableObject {
             assets = fetched.filter { !reviewed.contains($0.localIdentifier) }
         } else {
             assets = fetched
+        }
+
+        // Detect duplicates from the full fetched set
+        duplicateGroups = detectDuplicates(in: fetched)
+
+        // Filter to show only duplicates if requested
+        if filters.duplicatesOnly {
+            let duplicateAssets = Set(duplicateGroups.flatMap { $0 })
+            assets = assets.filter { duplicateAssets.contains($0) }
         }
 
         currentIndex = 0
@@ -254,6 +293,9 @@ final class PhotoLibraryManager: ObservableObject {
             return
         }
 
+        // Calculate total size before deleting
+        lastDeletedSize = toDelete.reduce(Int64(0)) { $0 + Int64($1.value(forKey: "pixelFileSize") as? Int ?? 0) }
+
         isDeleting = true
         PHPhotoLibrary.shared().performChanges({
             PHAssetChangeRequest.deleteAssets(toDelete as NSArray)
@@ -262,6 +304,7 @@ final class PhotoLibraryManager: ObservableObject {
                 self?.isDeleting = false
                 if success {
                     self?.markedForDeletion.removeAll()
+                    self?.showStorageFreed = true
                 }
                 completion(success)
             }
@@ -270,6 +313,10 @@ final class PhotoLibraryManager: ObservableObject {
 
     func cancelDeletions() {
         markedForDeletion.removeAll()
+    }
+
+    var lastDeletedSizeFormatted: String {
+        ByteCountFormatter.string(fromByteCount: lastDeletedSize, countStyle: .file)
     }
 
     func restart() {

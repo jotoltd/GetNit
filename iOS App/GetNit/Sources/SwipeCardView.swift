@@ -3,10 +3,12 @@ import Photos
 
 struct SwipeCardView: View {
     let image: UIImage
+    let photoDate: Date?
     let onKeep: () -> Void
     let onDelete: () -> Void
 
     @State private var offset: CGSize = .zero
+    @State private var hasTriggeredHaptic = false
 
     private let threshold: CGFloat = 120
 
@@ -48,6 +50,25 @@ struct SwipeCardView: View {
                     .rotationEffect(.degrees(8))
                     .padding(.trailing, 20)
             }
+
+            // Date overlay
+            if let date = photoDate {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Text(date, style: .date)
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(6)
+                            .padding(.bottom, 8)
+                            .padding(.trailing, 8)
+                    }
+                }
+            }
         }
         .offset(x: offset.width, y: offset.height)
         .rotationEffect(.degrees(Double(offset.width / 20)))
@@ -55,9 +76,18 @@ struct SwipeCardView: View {
             DragGesture()
                 .onChanged { value in
                     offset = value.translation
+                    // Trigger haptic when crossing threshold
+                    let crossed = abs(offset.width) > threshold
+                    if crossed && !hasTriggeredHaptic {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        hasTriggeredHaptic = true
+                    } else if !crossed {
+                        hasTriggeredHaptic = false
+                    }
                 }
                 .onEnded { _ in
                     if offset.width > threshold {
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
                         withAnimation(.easeOut(duration: 0.3)) {
                             offset = CGSize(width: 500, height: 0)
                         }
@@ -66,6 +96,7 @@ struct SwipeCardView: View {
                             offset = .zero
                         }
                     } else if offset.width < -threshold {
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
                         withAnimation(.easeOut(duration: 0.3)) {
                             offset = CGSize(width: -500, height: 0)
                         }
@@ -78,6 +109,7 @@ struct SwipeCardView: View {
                             offset = .zero
                         }
                     }
+                    hasTriggeredHaptic = false
                 }
         )
     }

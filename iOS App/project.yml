@@ -14,8 +14,7 @@ targets:
       properties:
         CFBundleDisplayName: GetNit
         NSPhotoLibraryUsageDescription: GetNit needs access to your photo library so you can swipe through and keep or delete photos.
-        UILaunchScreen:
-          UIColorName: LaunchBackground
+        UILaunchStoryboardName: LaunchScreen
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft

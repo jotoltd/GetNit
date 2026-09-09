@@ -74,7 +74,15 @@ struct ContentView: View {
     // MARK: - Photo Stack
 
     private var photoStack: some View {
-        VStack {
+        VStack(spacing: 0) {
+            // Progress bar
+            if manager.assets.count > 0 {
+                ProgressView(value: Double(manager.currentIndex), total: Double(manager.assets.count))
+                    .tint(.white)
+                    .padding(.horizontal)
+                    .padding(.top, 4)
+            }
+
             // Top bar: counters + filter + undo
             HStack {
                 Text("\(manager.currentIndex + 1) / \(manager.assets.count)")
@@ -116,6 +124,7 @@ struct ContentView: View {
                 if let image = manager.currentImage, manager.hasPhotos {
                     SwipeCardView(
                         image: image,
+                        photoDate: manager.assets[manager.currentIndex].creationDate,
                         onKeep: { manager.keepCurrent() },
                         onDelete: { manager.markCurrentForDeletion() }
                     )
@@ -125,7 +134,10 @@ struct ContentView: View {
 
             // Undo button
             if manager.canUndo {
-                Button(action: { manager.undoLastSwipe() }) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    manager.undoLastSwipe()
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.uturn.backward")
                         Text("Undo")
@@ -144,13 +156,19 @@ struct ContentView: View {
 
             // Action buttons
             HStack(spacing: 40) {
-                Button(action: { manager.markCurrentForDeletion() }) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    manager.markCurrentForDeletion()
+                }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 60))
                         .foregroundColor(.red)
                 }
 
-                Button(action: { manager.keepCurrent() }) {
+                Button(action: {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    manager.keepCurrent()
+                }) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 60))
                         .foregroundColor(.green)
@@ -185,6 +203,19 @@ struct ContentView: View {
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
+
+            if manager.showStorageFreed && manager.lastDeletedSize > 0 {
+                VStack(spacing: 6) {
+                    Text("Storage freed:")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text(manager.lastDeletedSizeFormatted)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.green)
+                }
+                .padding(.vertical, 10)
+            }
 
             Text("You've reviewed all your photos. New photos will appear here next time.")
                 .foregroundColor(.white.opacity(0.7))
@@ -263,6 +294,7 @@ struct ContentView: View {
             } else {
                 VStack(spacing: 12) {
                     Button(action: {
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
                         manager.performBatchDelete { _ in }
                     }) {
                         Text("Delete \(manager.markedForDeletion.count) Photo\(manager.markedForDeletion.count == 1 ? "" : "s")")
