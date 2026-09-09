@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var showFilters = false
     @State private var showSettings = false
     @State private var showMetadata = false
+    @State private var showStats = false
 
     var body: some View {
         ZStack {
@@ -40,6 +41,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(manager: manager)
+        }
+        .sheet(isPresented: $showStats) {
+            StatsView(manager: manager)
         }
         .sheet(isPresented: $showMetadata) {
             if manager.hasPhotos {
@@ -124,28 +128,39 @@ struct ContentView: View {
                         .foregroundColor(.white)
                 }
 
+                Button(action: { showStats = true }) {
+                    Image(systemName: "chart.bar.circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                }
+                .padding(.leading, 4)
+
                 Button(action: { showSettings = true }) {
                     Image(systemName: "gearshape.circle")
                         .font(.system(size: 22))
                         .foregroundColor(.white)
                 }
-                .padding(.leading, 8)
+                .padding(.leading, 4)
             }
             .padding(.horizontal)
             .padding(.top, 8)
 
             // Card stack
             ZStack {
-                // Background (next) card
-                if let next = manager.nextImage {
-                    Image(uiImage: next)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .cornerRadius(16)
-                        .scaleEffect(0.95)
-                        .opacity(0.6)
-                        .padding()
+                // Background cards (stack depth)
+                ForEach(Array((1...3).reversed()), id: \.self) { stackOffset in
+                    let idx = manager.currentIndex + stackOffset
+                    if idx < manager.assets.count, let img = manager.upcomingImages[idx] {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .cornerRadius(16)
+                            .scaleEffect(1.0 - CGFloat(stackOffset) * 0.05)
+                            .opacity(1.0 - Double(stackOffset) * 0.25)
+                            .offset(y: CGFloat(stackOffset) * 8)
+                            .padding()
+                    }
                 }
 
                 // Interactive top card

@@ -17,6 +17,13 @@ enum SortOption: String, CaseIterable {
     case smallestFirst = "Smallest First"
 }
 
+struct LibraryStats {
+    let totalPhotos: Int
+    let totalScreenshots: Int
+    let totalDuplicates: Int
+    let estimatedStorage: Int64
+}
+
 enum SwipeAction: Equatable {
     case keep
     case markForDeletion
@@ -45,12 +52,15 @@ final class PhotoLibraryManager: ObservableObject {
     @Published var lastDeletedSize: Int64 = 0
     @Published var showStorageFreed: Bool = false
     @Published var duplicateGroups: [[PHAsset]] = []
+    @Published var upcomingImages: [Int: UIImage] = [:]
+    @Published var libraryStats: LibraryStats?
 
     private let reviewedKey = "com.getnit.reviewedAssets"
     private let rememberKey = "com.getnit.rememberReviewed"
     private let imageManager = PHImageManager.default()
     private var currentRequestID: PHImageRequestID?
     private var nextRequestID: PHImageRequestID?
+    private var stackRequestIDs: [PHImageRequestID] = []
     private let targetSize = CGSize(width: 800, height: 1200)
 
     var hasPhotos: Bool { !assets.isEmpty && currentIndex < assets.count }
@@ -80,6 +90,39 @@ final class PhotoLibraryManager: ObservableObject {
     func setRememberReviewed(_ value: Bool) {
         rememberReviewed = value
         UserDefaults.standard.set(value, forKey: rememberKey)
+    }
+
+    // MARK: - Library Stats
+
+    func calculateLibraryStats() {
+        let options = PHFetchOptions()
+        let allAssets = PHAsset.fetchAssets(with: .image, options: options)
+
+        var total = 0
+        var screenshots = 0
+        var storageSize: Int64 = 0
+
+        allAssets.enumerateObjects { asset, _, _ in
+            total += 1
+            if asset.mediaSubtypes.contains(.photoScreenshot) {
+                screenshots += 1
+            }
+            let resources = PHAssetResource.assetResources(for: asset)
+            for resource in resources {
+                if let size = resource.value(forKey: "fileSize") as? Int64 {
+                    storageSize += size
+                }
+            }
+        }
+
+        DispatchQueue.main.async {
+            self.libraryStats = LibraryStats(
+                totalPhotos: total,
+                totalScreenshots: screenshots,
+                totalDuplicates: self.duplicateGroups.reduce(0) { $0 + $1.count },
+                estimatedStorage: storageSize
+            )
+        }
     }
 
     // MARK: - Authorization
@@ -190,6 +233,9 @@ final class PhotoLibraryManager: ObservableObject {
         // Detect duplicates from the full fetched set
         duplicateGroups = detectDuplicates(in: fetched)
 
+        // Calculate library stats
+        calculateLibraryStats()
+
         // Filter to show only duplicates if requested
         if filters.duplicatesOnly {
             let duplicateAssets = Set(duplicateGroups.flatMap { $0 })
@@ -206,6 +252,9 @@ final class PhotoLibraryManager: ObservableObject {
     func loadCurrentImage() {
         if let id = currentRequestID { imageManager.cancelImageRequest(id) }
         if let id = nextRequestID { imageManager.cancelImageRequest(id) }
+        for id in stackRequestIDs { imageManager.cancelImageRequest(id) }
+        stackRequestIDs.removeAll()
+        upcomingImages.removeAll()
         nextImage = nil
 
         guard currentIndex < assets.count else {
@@ -227,17 +276,37 @@ final class PhotoLibraryManager: ObservableObject {
             DispatchQueue.main.async { self?.currentImage = image }
         }
 
-        // Preload next card for stack animation
-        if currentIndex + 1 < assets.count {
-            let nextAsset = assets[currentIndex + 1]
-            nextRequestID = imageManager.requestImage(
-                for: nextAsset,
+        // Preload next card + stack cards
+        preloadStackImages()
+    }
+
+    private func preloadStackImages() {
+        // Preload next 3 images for the card stack
+        for offset in 1...3 {
+            let idx = currentIndex + offset
+            guard idx < assets.count else { break }
+
+            let stackAsset = assets[idx]
+            let options = PHImageRequestOptions()
+            options.deliveryMode = .opportunistic
+            options.isNetworkAccessAllowed = true
+
+            let reqID = imageManager.requestImage(
+                for: stackAsset,
                 targetSize: targetSize,
                 contentMode: .aspectFit,
                 options: options
             ) { [weak self] image, _ in
-                DispatchQueue.main.async { self?.nextImage = image }
+                if let image = image {
+                    DispatchQueue.main.async {
+                        self?.upcomingImages[idx] = image
+                        if idx == (self?.currentIndex ?? 0) + 1 {
+                            self?.nextImage = image
+                        }
+                    }
+                }
             }
+            stackRequestIDs.append(reqID)
         }
     }
 
@@ -296,13 +365,19 @@ final class PhotoLibraryManager: ObservableObject {
             isComplete = true
             currentImage = nil
             nextImage = nil
+            upcomingImages.removeAll()
         } else {
-            // Immediately swap to preloaded next image to avoid flashing old photo
-            if let next = nextImage {
+            // Immediately swap to preloaded image to avoid flashing old photo
+            if let next = upcomingImages[currentIndex] {
+                currentImage = next
+                upcomingImages.removeValue(forKey: currentIndex)
+                nextImage = upcomingImages[currentIndex + 1]
+                // Preload more images to keep the stack filled
+                preloadStackImages()
+            } else if let next = nextImage {
                 currentImage = next
                 nextImage = nil
-                // Preload the next-next image
-                preloadNextImage()
+                preloadStackImages()
             } else {
                 loadCurrentImage()
             }
@@ -310,24 +385,7 @@ final class PhotoLibraryManager: ObservableObject {
     }
 
     private func preloadNextImage() {
-        if let id = nextRequestID { imageManager.cancelImageRequest(id) }
-        nextImage = nil
-
-        guard currentIndex + 1 < assets.count else { return }
-
-        let nextAsset = assets[currentIndex + 1]
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-
-        nextRequestID = imageManager.requestImage(
-            for: nextAsset,
-            targetSize: targetSize,
-            contentMode: .aspectFit,
-            options: options
-        ) { [weak self] image, _ in
-            DispatchQueue.main.async { self?.nextImage = image }
-        }
+        preloadStackImages()
     }
 
     // MARK: - Batch Delete

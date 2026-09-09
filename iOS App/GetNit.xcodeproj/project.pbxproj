@@ -15,6 +15,7 @@
 		349F9156F2C9FED32FB5786D /* SwipeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9599890335354A1BCA1DFE83 /* SwipeCardView.swift */; };
 		9DC41AC2BD6761396374EC4C /* ReviewGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24F101A9036F9126F2982C6 /* ReviewGridView.swift */; };
 		DA3E4CF0401CC4D73947966C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0B573D6C486BF97BB7C0795C /* Assets.xcassets */; };
+		E3204E54395520F56B08CABB /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4177D40751AEC3D7E7F884E /* StatsView.swift */; };
 		E3E4A55EF383573CC12DEDCA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D927B57C2618F67779146FF8 /* ContentView.swift */; };
 		F8DA028FBDC3813AF96F7810 /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C84CAE39F3FD9A329F9FF4F0 /* FilterView.swift */; };
 		F95BC5D5ACA55EE7FEDD8406 /* PhotoLibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9D70F6AFCCFD4B410D43D0 /* PhotoLibraryManager.swift */; };
@@ -27,6 +28,7 @@
 		47FFCDA6CE78181A6C7B895B /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		9599890335354A1BCA1DFE83 /* SwipeCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeCardView.swift; sourceTree = "<group>"; };
 		A24F101A9036F9126F2982C6 /* ReviewGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewGridView.swift; sourceTree = "<group>"; };
+		A4177D40751AEC3D7E7F884E /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		B580C2A67AD5F1B0E9BB7861 /* PhotoMetadataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMetadataView.swift; sourceTree = "<group>"; };
 		C84CAE39F3FD9A329F9FF4F0 /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		CB9D70F6AFCCFD4B410D43D0 /* PhotoLibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryManager.swift; sourceTree = "<group>"; };
@@ -57,6 +59,7 @@
 				B580C2A67AD5F1B0E9BB7861 /* PhotoMetadataView.swift */,
 				A24F101A9036F9126F2982C6 /* ReviewGridView.swift */,
 				117EDB2062D4A3255D87ABE8 /* SettingsView.swift */,
+				A4177D40751AEC3D7E7F884E /* StatsView.swift */,
 				9599890335354A1BCA1DFE83 /* SwipeCardView.swift */,
 			);
 			name = Sources;
@@ -147,6 +150,7 @@
 				16B0C55DAB9207B01F765A63 /* PhotoMetadataView.swift in Sources */,
 				9DC41AC2BD6761396374EC4C /* ReviewGridView.swift in Sources */,
 				04936E389A5AFDBD1DDF92A4 /* SettingsView.swift in Sources */,
+				E3204E54395520F56B08CABB /* StatsView.swift in Sources */,
 				349F9156F2C9FED32FB5786D /* SwipeCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
