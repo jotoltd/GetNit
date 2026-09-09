@@ -64,6 +64,7 @@ Initial release! Swipe through your photo gallery and clean it up with a flick o
 GetNit requires photo library access to display and delete photos. The app uses PHPhotoLibrary with readWrite permission to perform batch deletions after user confirmation. No data is collected or transmitted.
 
 ## Required Device Sizes for Screenshots
-- 6.7" (iPhone 15 Pro Max / 14 Plus) — required
-- 6.5" (iPhone 11 Pro Max) — required
-- 5.5" (iPhone 8 Plus) — required
+- 6.9" (1320x2868 / 1290x2796 / 1260x2736) — required if app runs on iPhone (newest master size)
+- 6.5" (1284x2778 / 1242x2688) — required only if no 6.9" set provided; current set is 1284x2778
+- 5.5" (1242x2208) — optional, auto-scaled from the 6.9"/6.5" set
+- App targets iPhone only (TARGETED_DEVICE_FAMILY = 1), so no iPad screenshots required

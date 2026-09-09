@@ -28,3 +28,4 @@ targets:
         DEVELOPMENT_TEAM: 3B9B42HAF9
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"
+        TARGETED_DEVICE_FAMILY: "1"
