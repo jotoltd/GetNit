@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var manager = PhotoLibraryManager()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("hasSeenSwipeTutorial") private var hasSeenSwipeTutorial = false
     @State private var hasStartedSwiping = false
     @State private var showFilters = false
     @State private var showSettings = false
@@ -21,7 +22,17 @@ struct ContentView: View {
                 welcomeView
             } else if manager.authorizationStatus == .authorized || manager.authorizationStatus == .limited {
                 if hasStartedSwiping && !manager.isComplete {
-                    photoStack
+                    ZStack {
+                        photoStack
+                        if !hasSeenSwipeTutorial {
+                            SwipeTutorialView(isPresented: Binding(
+                                get: { !hasSeenSwipeTutorial },
+                                set: { newValue in
+                                    if !newValue { hasSeenSwipeTutorial = true }
+                                }
+                            ))
+                        }
+                    }
                 } else if hasStartedSwiping && manager.isComplete {
                     summaryView
                 } else {
