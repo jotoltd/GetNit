@@ -91,7 +91,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					541DEB7B9D926A70C1077E11 = {
-						DevelopmentTeam = A7QCQT8PG5;
+						DevelopmentTeam = 3B9B42HAF9;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -149,7 +149,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A7QCQT8PG5;
+				DEVELOPMENT_TEAM = 3B9B42HAF9;
 				INFOPLIST_FILE = GetNit/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -232,7 +232,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = A7QCQT8PG5;
+				DEVELOPMENT_TEAM = 3B9B42HAF9;
 				INFOPLIST_FILE = GetNit/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
