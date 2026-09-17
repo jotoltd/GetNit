@@ -88,7 +88,7 @@ struct ContentView: View {
                 .fontWeight(.bold)
             Text("Swipe right to keep, left to delete.")
                 .font(.title3)
-            Button("Allow Photo Access") {
+            Button("Continue") {
                 manager.requestAuthorization()
             }
             .padding()
@@ -108,6 +108,15 @@ struct ContentView: View {
             Text("Please enable it in Settings > Privacy & Security > Photos.")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .padding()
+            .background(Color.white)
+            .foregroundColor(.black)
+            .cornerRadius(12)
         }
         .foregroundColor(.white)
         .padding()

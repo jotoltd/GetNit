@@ -167,12 +167,19 @@ struct SwipeCardView: View {
         let options = PHVideoRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
+        options.version = .current
 
         PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
-            if let urlAsset = avAsset as? AVURLAsset {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if let urlAsset = avAsset as? AVURLAsset {
                     self.videoURL = urlAsset.url
                     self.showVideoPlayer = true
+                } else if let _ = avAsset as? AVComposition {
+                    // For edited videos, create a temporary file
+                    if let urlAsset = avAsset as? AVURLAsset {
+                        self.videoURL = urlAsset.url
+                        self.showVideoPlayer = true
+                    }
                 }
             }
         }
@@ -200,11 +207,23 @@ struct VideoPlayerView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
-        controller.player = AVPlayer(url: url)
-        controller.player?.play()
+        let player = AVPlayer(url: url)
+        controller.player = player
         controller.allowsPictureInPicturePlayback = true
+        controller.videoGravity = .resizeAspect
+
+        // Listen for readiness
+        player.actionAtItemEnd = .pause
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            player.play()
+        }
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
+        // Ensure video plays when view appears
+        if uiViewController.player?.rate == 0 {
+            uiViewController.player?.play()
+        }
+    }
 }
