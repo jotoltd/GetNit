@@ -42,6 +42,9 @@ getnit-web/.env*.local
 Export/
 ExportOptions.plist
 
+# App Store Connect API keys
+api_key.json
+
 # Misc
 *.zip
 *.log
