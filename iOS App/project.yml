@@ -15,6 +15,8 @@ targets:
         CFBundleDisplayName: GetNit
         NSPhotoLibraryUsageDescription: GetNit needs access to your photo library so you can swipe through and keep or delete photos.
         UILaunchStoryboardName: LaunchScreen
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
@@ -22,8 +24,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.digitalgaff.getnit
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.1
+        CURRENT_PROJECT_VERSION: 4
+        MARKETING_VERSION: 1.2
         DEVELOPMENT_TEAM: 3B9B42HAF9
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"

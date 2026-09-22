@@ -1,0 +1,11 @@
+app_identifier "com.digitalgaff.getnit"
+app_version "1.2"
+api_key_path "api_key.json"
+metadata_path "metadata"
+screenshots_path "upload"
+skip_binary_upload true
+skip_screenshots true
+skip_metadata false
+overwrite_screenshots true
+run_precheck_before_submit false
+force true

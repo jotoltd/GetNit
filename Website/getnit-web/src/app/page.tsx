@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen">do it 
       {/* Nav */}
       <nav className="fixed top-0 w-full z-50 backdrop-blur-lg bg-black/60 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -252,7 +252,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl md:text-6xl font-bold mb-6">Ready to clean up?</h2>
           <p className="text-white/60 text-xl mb-10">Download GetNit and swipe your way to a cleaner gallery.</p>
-          <a href="#" className="inline-flex items-center gap-3 bg-white text-black px-10 py-5 rounded-full font-semibold text-xl hover:bg-white/90 transition glow-green">
+          <a href="https://apps.apple.com/us/app/getnit-photo-cleaner/id6810416446" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 bg-white text-black px-10 py-5 rounded-full font-semibold text-xl hover:bg-white/90 transition glow-green">
             <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.09 1.85-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
             </svg>

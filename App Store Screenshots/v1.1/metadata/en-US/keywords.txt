@@ -1,0 +1,1 @@
+photo cleaner,delete photos,swipe photos,clean storage,remove screenshots,declutter photos
