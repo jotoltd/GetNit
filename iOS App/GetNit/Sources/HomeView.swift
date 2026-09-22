@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var deviceStorage: DeviceStorage?
     @State private var requestReview = false
+    @State private var showDeleteAllConfirm = false
     @Environment(\.requestReview) private var requestReviewAction
 
     struct DeviceStorage {
@@ -193,10 +194,15 @@ struct HomeView: View {
                             Text("\(manager.markedForDeletion.count) photos marked for deletion")
                                 .foregroundColor(.white.opacity(0.8))
                             Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.5))
                         }
                         .padding()
                         .background(Color.pink.opacity(0.15))
                         .cornerRadius(12)
+                        .contentShape(Rectangle())
+                        .onTapGesture { hasStartedSwiping = true }
                     }
                 }
                 .padding(.horizontal, 24)
@@ -250,9 +256,31 @@ struct HomeView: View {
                     .foregroundColor(.white)
                     .cornerRadius(16)
                 }
+
+                Button(action: { showDeleteAllConfirm = true }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "trash.fill")
+                        Text("Delete All")
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.red.opacity(0.15))
+                    .foregroundColor(.red)
+                    .cornerRadius(16)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
+        }
+        .alert("Delete All?", isPresented: $showDeleteAllConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Mark All for Review", role: .destructive) {
+                manager.markAllForDeletion()
+                DispatchQueue.main.async { hasStartedSwiping = true }
+            }
+        } message: {
+            Text("This marks every photo and video matching your current filters for deletion. You'll get one more chance to review before anything is permanently removed.")
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear { loadDeviceStorage() }

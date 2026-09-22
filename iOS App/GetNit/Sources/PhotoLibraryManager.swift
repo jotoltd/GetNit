@@ -194,7 +194,7 @@ final class PhotoLibraryManager: ObservableObject {
 
     // MARK: - Loading Assets
 
-    func loadAssets() {
+    private func fetchFilteredAssets() -> [PHAsset] {
         let options = PHFetchOptions()
         switch filters.sortOption {
         case .newestFirst:
@@ -243,6 +243,11 @@ final class PhotoLibraryManager: ObservableObject {
                 }
             }
         }
+        return fetched
+    }
+
+    func loadAssets() {
+        let fetched = fetchFilteredAssets()
 
         if rememberReviewed {
             let reviewed = loadReviewed()
@@ -426,6 +431,16 @@ final class PhotoLibraryManager: ObservableObject {
 
     // MARK: - Batch Delete
 
+    /// Marks every asset matching the current filters for deletion, ignoring review history.
+    func markAllForDeletion() {
+        if filters.duplicatesOnly {
+            markedForDeletion = Set(duplicateGroups.flatMap { $0 })
+        } else {
+            markedForDeletion = Set(fetchFilteredAssets())
+        }
+        isComplete = true
+    }
+
     func performBatchDelete(completion: @escaping (Bool) -> Void) {
         let toDelete = Array(markedForDeletion)
         guard !toDelete.isEmpty else {
@@ -445,6 +460,7 @@ final class PhotoLibraryManager: ObservableObject {
                 if success {
                     self?.markedForDeletion.removeAll()
                     self?.showStorageFreed = true
+                    self?.loadAssets()
                 }
                 completion(success)
             }
