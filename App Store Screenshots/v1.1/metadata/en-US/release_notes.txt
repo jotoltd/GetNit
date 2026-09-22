@@ -1,3 +1,7 @@
-Bug fixes and under-the-hood improvements.
+What's new in 1.2:
 
-In case you missed it in 1.1: video support (tap the play badge to watch before deciding), a new home screen with real storage stats, and a first-run swipe tutorial.
+• Delete All — a new button on the home screen marks everything matching your current filters for deletion at once. Review the grid, confirm, done.
+• Video playback fixes — edited and slo-mo videos now play, audio works even with the mute switch on, and the play badge shows a spinner while iCloud videos load.
+• The marked-for-deletion banner on the home screen is now tappable.
+
+Thanks for cleaning up with GetNit!
