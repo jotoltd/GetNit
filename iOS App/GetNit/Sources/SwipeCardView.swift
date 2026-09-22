@@ -2,6 +2,7 @@ import SwiftUI
 import Photos
 import PhotosUI
 import AVKit
+import AVFoundation
 
 struct SwipeCardView: View {
     let image: UIImage
@@ -16,7 +17,8 @@ struct SwipeCardView: View {
     @State private var offset: CGSize = .zero
     @State private var hasTriggeredHaptic = false
     @State private var showVideoPlayer = false
-    @State private var videoURL: URL?
+    @State private var playerItem: AVPlayerItem?
+    @State private var isLoadingVideo = false
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
 
     private let threshold: CGFloat = 120
@@ -87,9 +89,14 @@ struct SwipeCardView: View {
                         loadAndPlayVideo()
                     }) {
                         HStack {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
+                            if isLoadingVideo {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "play.circle.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.white)
+                            }
                             if let duration = videoDuration {
                                 Text(formatDuration(duration))
                                     .font(.caption)
@@ -155,31 +162,29 @@ struct SwipeCardView: View {
         .onLongPressGesture(minimumDuration: 0.5) {
             onLongPress()
         }
-        .fullScreenCover(isPresented: $showVideoPlayer) {
-            if let url = videoURL {
-                VideoPlayerView(url: url)
+        .fullScreenCover(isPresented: $showVideoPlayer, onDismiss: {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }) {
+            if let item = playerItem {
+                VideoPlayerView(playerItem: item)
             }
         }
     }
 
     private func loadAndPlayVideo() {
-        guard let asset = videoAsset else { return }
+        guard let asset = videoAsset, !isLoadingVideo else { return }
+        isLoadingVideo = true
         let options = PHVideoRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
         options.version = .current
 
-        PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
+        PHImageManager.default().requestPlayerItem(forVideo: asset, options: options) { item, _ in
             DispatchQueue.main.async {
-                if let urlAsset = avAsset as? AVURLAsset {
-                    self.videoURL = urlAsset.url
+                self.isLoadingVideo = false
+                if let item {
+                    self.playerItem = item
                     self.showVideoPlayer = true
-                } else if let _ = avAsset as? AVComposition {
-                    // For edited videos, create a temporary file
-                    if let urlAsset = avAsset as? AVURLAsset {
-                        self.videoURL = urlAsset.url
-                        self.showVideoPlayer = true
-                    }
                 }
             }
         }
@@ -203,27 +208,23 @@ struct SwipeCardView: View {
 }
 
 struct VideoPlayerView: UIViewControllerRepresentable {
-    let url: URL
+    let playerItem: AVPlayerItem
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
+        // Switch to playback category so audio isn't silenced by the mute switch
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+
         let controller = AVPlayerViewController()
-        let player = AVPlayer(url: url)
+        let player = AVPlayer(playerItem: playerItem)
         controller.player = player
         controller.allowsPictureInPicturePlayback = true
         controller.videoGravity = .resizeAspect
 
-        // Listen for readiness
         player.actionAtItemEnd = .pause
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            player.play()
-        }
+        player.play()
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {
-        // Ensure video plays when view appears
-        if uiViewController.player?.rate == 0 {
-            uiViewController.player?.play()
-        }
-    }
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
 }
